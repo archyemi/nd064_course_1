@@ -1,13 +1,30 @@
 import sqlite3
+import logging
 
 from flask import Flask, jsonify, json, render_template, request, url_for, redirect, flash
 from werkzeug.exceptions import abort
+import sys
+
+number = 0
+
+stdout_h = logging.StreamHandler(sys.stdout)
+stdout_h.setLevel(logging.DEBUG)
+
+stderr_h = logging.StreamHandler(sys.stderr)
+stderr_h.setLevel(logging.ERROR)
+
+handlers = [stderr_h, stdout_h]
+# format output
+format_output = logging.Formatter('%(asctime)s: %(name)s: %(levelname)s: %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s: %(name)s: %(levelname)s: %(message)s', handlers=handlers)
 
 # Function to get a database connection.
 # This function connects to database with the name `database.db`
 def get_db_connection():
+    global number
     connection = sqlite3.connect('database.db')
     connection.row_factory = sqlite3.Row
+    number += 1
     return connection
 
 # Function to get a post using its ID
@@ -36,13 +53,17 @@ def index():
 def post(post_id):
     post = get_post(post_id)
     if post is None:
+      app.logger.info('A non-existing article is accessed')
       return render_template('404.html'), 404
     else:
+      app.logger.info('%s article is retrieved', post)
       return render_template('post.html', post=post)
+      
 
 # Define the About Us page
 @app.route('/about')
 def about():
+    app.logger.info('About Us page is retrieved')
     return render_template('about.html')
 
 # Define the post creation functionality 
@@ -60,11 +81,39 @@ def create():
                          (title, content))
             connection.commit()
             connection.close()
-
+            app.logger.info('%s article is created', title)
             return redirect(url_for('index'))
 
     return render_template('create.html')
 
+# Define the /healthz endpoint
+@app.route('/healthz')
+def healthcheck():
+    response = app.response_class(
+            response=json.dumps({"result":"OK - healthy"}),
+            status=200,
+            mimetype='application/json'
+    )
+
+    app.logger.info('Healthz request successfull')
+    return response
+
+# Define the /metrics endpoint
+@app.route('/metrics')
+def metrics():
+    connection = get_db_connection()
+    posts =  connection.execute('SELECT * FROM posts').fetchall()
+    connection.close()
+    response = app.response_class(
+            response=json.dumps({"status":"success","code":0,"data":{"db_connection_count": number,"post_count":len(posts)}}),
+            status=200,
+            mimetype='application/json'
+    )
+
+    app.logger.info('Metrics request successfull')
+    return response
+
 # start the application on port 3111
 if __name__ == "__main__":
-   app.run(host='0.0.0.0', port='3111')
+    
+    app.run(host='0.0.0.0', port='3111')
