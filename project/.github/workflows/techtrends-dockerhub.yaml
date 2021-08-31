@@ -40,3 +40,4 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: aalatishe86/techtrends:latest
+          
