@@ -12,7 +12,7 @@ docker logs -f 9e34f9040e2d
 
 ## Logs from the container running the TechTrends application
 # TODO: paste logs from the Docker container 
-     Use a production WSGI server instead.
+Use a production WSGI server instead.
  * Debug mode: off
 2021-08-30 19:58:51,418: werkzeug: INFO:  * Running on http://0.0.0.0:3111/ (Press CTRL+C to quit)        
 2021-08-30 20:00:55,614: app: INFO: About Us page is retrieved
